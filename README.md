@@ -1,71 +1,88 @@
-# Levec Electricidad y Construcción
+# Fusion App
 
-Sitio web corporativo para **Levec Electricidad y Construcción**, una empresa especializada en soluciones eléctricas residenciales, comerciales e industriales, así como en proyectos de electromovilidad y certificaciones SEC.
+A modern, responsive web application built with React, TypeScript, and Vite. It features secure authentication and data management capabilities.
 
-![Levec Preview](assets/images/hero_geometric.png)
+## 🚀 Tech Stack
 
-## 📋 Descripción
+- **Frontend Framework**: [React 19](https://react.dev/)
+- **Build Tool**: [Vite 5](https://vitejs.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Routing**: [React Router v7](https://reactrouter.com/)
+- **Styling**: CSS with utility management (`clsx`, `tailwind-merge`)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Backend / BaaS**: [Supabase](https://supabase.com/)
+- **Data Processing**: [PapaParse](https://www.papaparse.com/) (CSV), [XLSX](https://sheetjs.com/) (Excel)
 
-Este proyecto es un sitio web estático moderno, diseñado con un enfoque minimalista y elegante. Su objetivo es presentar los servicios de la empresa de manera clara, generar confianza mediante la sección de certificaciones y facilitar el contacto con clientes potenciales.
+## ✨ Key Features
 
-## ✨ Características
+- **Authentication System**: Secure login flow, protected routes, and password reset functionalities powered by Supabase.
+- **Dashboard Interface**: A central hub for authenticated users.
+- **Data Import/Export**: Built-in support for processing and managing spreadsheet data (CSV & Excel).
 
-*   **Diseño Responsivo**: Adaptado perfectamente a dispositivos móviles, tablets y escritorios.
-*   **Animaciones Suaves**: Efectos de aparición (fade-in) al hacer scroll para una experiencia de usuario dinámica.
-*   **Navegación Intuitiva**: Menú de navegación fijo con acceso rápido a secciones clave.
-*   **Páginas de Detalle**: Páginas individuales para cada servicio (Residencial, Comercial, Industrial, Certificación, Electromovilidad).
-*   **Sección de Proveedores**: Visualización de marcas certificadas con las que trabaja la empresa.
-*   **Formulario de Contacto**: Sección de contacto destacada con diseño premium.
+## 🛠️ Getting Started
 
-## 🛠️ Tecnologías Utilizadas
+### Prerequisites
 
-*   **HTML5**: Estructura semántica.
-*   **CSS3**: Estilos personalizados, Flexbox, Grid, Variables CSS y Animaciones.
-*   **JavaScript**: Lógica para el menú móvil y observadores de intersección (Intersection Observer) para animaciones.
-*   **Ionicons**: Iconografía moderna y escalable.
+Ensure you have [Node.js](https://nodejs.org/) (version 22 recommended) installed on your machine.
 
-## 🚀 Cómo Ejecutar Localmente
+### Installation
 
-Para ver el proyecto en tu máquina local:
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd fusion-app
+   ```
 
-1.  Clona este repositorio:
-    ```bash
-    git clone https://github.com/tu-usuario/levec-electricidad.git
-    ```
-2.  Navega al directorio del proyecto:
-    ```bash
-    cd levec-electricidad
-    ```
-3.  Si tienes Python instalado, puedes levantar un servidor simple:
-    ```bash
-    python -m http.server 3000
-    ```
-    O si prefieres usar Node.js (npx):
-    ```bash
-    npx http-server -p 3000
-    ```
-4.  Abre tu navegador en `http://localhost:3000`.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-## 📄 Estructura del Proyecto
+### Environment Setup
 
-```
-levec-electricidad/
-├── assets/          # Imágenes y recursos estáticos
-├── css/
-│   └── style.css    # Hoja de estilos principal
-├── js/
-│   └── script.js    # Lógica JavaScript (menú, scroll)
-├── servicios/       # Páginas de detalle de servicios
-│   ├── residencial.html
-│   ├── comercial.html
-│   ├── ...
-└── index.html       # Página principal
+Create a `.env.local` file in the root of the project and add your Supabase credentials. You can duplicate `.env.example` if it exists, or create a new file with the following variables:
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-## 📞 Contacto
+### Running the App Locally
 
-*   **Teléfono**: +56 9 4420 4060
-*   **Email**: contacto@levec.cl
+Start the Vite development server:
 
----
-© 2026 Levec Electricidad y Construcción. Todos los derechos reservados.
+```bash
+npm run dev
+```
+
+The application will be available at `http://localhost:5173`.
+
+## 📦 Build and Deployment
+
+### Building for Production
+
+To create an optimized production build:
+
+```bash
+npm run build
+```
+
+The built files will be output to the `dist` directory, ready to be deployed to your preferred hosting provider (Vercel, Netlify, Render, etc.).
+
+### Run Linter
+
+To ensure code quality and consistency:
+
+```bash
+npm run lint
+```
+
+## 📁 Project Structure
+
+A quick overview of the essential directories in the `src` folder:
+
+- `src/components/`: Reusable UI components and layout wrappers (e.g., `ProtectedRoute`).
+- `src/contexts/`: React contexts holding global state (like `AuthContext`).
+- `src/pages/`: Main route components (`Login`, `Dashboard`, `UpdatePassword`).
+- `src/lib/`: Core utilities and integrations (such as the Supabase client initialization).
+- `src/types/`: Global TypeScript type definitions and interfaces.
