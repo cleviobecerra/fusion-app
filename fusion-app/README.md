@@ -1,73 +1,88 @@
-# React + TypeScript + Vite
+# Fusion App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, responsive web application built with React, TypeScript, and Vite. It features secure authentication and data management capabilities.
 
-Currently, two official plugins are available:
+## 🚀 Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Frontend Framework**: [React 19](https://react.dev/)
+- **Build Tool**: [Vite 5](https://vitejs.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Routing**: [React Router v7](https://reactrouter.com/)
+- **Styling**: CSS with utility management (`clsx`, `tailwind-merge`)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Backend / BaaS**: [Supabase](https://supabase.com/)
+- **Data Processing**: [PapaParse](https://www.papaparse.com/) (CSV), [XLSX](https://sheetjs.com/) (Excel)
 
-## React Compiler
+## ✨ Key Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Authentication System**: Secure login flow, protected routes, and password reset functionalities powered by Supabase.
+- **Dashboard Interface**: A central hub for authenticated users.
+- **Data Import/Export**: Built-in support for processing and managing spreadsheet data (CSV & Excel).
 
-## Expanding the ESLint configuration
+## 🛠️ Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Ensure you have [Node.js](https://nodejs.org/) (version 22 recommended) installed on your machine.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Installation
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd fusion-app
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+### Environment Setup
+
+Create a `.env.local` file in the root of the project and add your Supabase credentials. You can duplicate `.env.example` if it exists, or create a new file with the following variables:
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Running the App Locally
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Start the Vite development server:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+The application will be available at `http://localhost:5173`.
+
+## 📦 Build and Deployment
+
+### Building for Production
+
+To create an optimized production build:
+
+```bash
+npm run build
+```
+
+The built files will be output to the `dist` directory, ready to be deployed to your preferred hosting provider (Vercel, Netlify, Render, etc.).
+
+### Run Linter
+
+To ensure code quality and consistency:
+
+```bash
+npm run lint
+```
+
+## 📁 Project Structure
+
+A quick overview of the essential directories in the `src` folder:
+
+- `src/components/`: Reusable UI components and layout wrappers (e.g., `ProtectedRoute`).
+- `src/contexts/`: React contexts holding global state (like `AuthContext`).
+- `src/pages/`: Main route components (`Login`, `Dashboard`, `UpdatePassword`).
+- `src/lib/`: Core utilities and integrations (such as the Supabase client initialization).
+- `src/types/`: Global TypeScript type definitions and interfaces.
