@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma'
+export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 
 import { format } from 'date-fns'
@@ -36,7 +37,7 @@ export default async function TesteadorDashboard() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {requests.map((req) => (
+                        {requests.map((req: any) => (
                             <TableRow key={req.id} className="hover:bg-slate-50/50">
                                 <TableCell className="font-medium text-slate-900 capitalize">
                                     {format(new Date(req.scheduledFor), "PPP", { locale: es })}

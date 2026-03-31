@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { getAnalyticsData, getFilterOptions } from '@/app/actions/analytics'
+import { getAnalyticsData, getFilterOptions, getExportData } from '@/app/actions/analytics'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import { Loader2, Download, BarChart3, Table as TableIcon } from 'lucide-react'
@@ -18,6 +18,7 @@ export default function AnalyticsPage() {
     const [activeTab, setActiveTab] = useState<'charts' | 'tables'>('charts')
     const [data, setData] = useState<any>(null)
     const [loading, setLoading] = useState(true)
+    const [exporting, setExporting] = useState(false)
     const [options, setOptions] = useState<{ businessUnits: string[], subAreas: string[], years: string[], months: string[], days: string[] }>({ businessUnits: [], subAreas: [], years: [], months: [], days: [] })
     const [filters, setFilters] = useState<{ year?: string, month?: string, day?: string, businessUnit: string, subArea: string }>({
         year: undefined,
@@ -40,14 +41,10 @@ export default function AnalyticsPage() {
     }, [filters])
 
     useEffect(() => {
-        // Initial load of options
         getFilterOptions().then(setOptions)
     }, [])
 
     useEffect(() => {
-        // Update sub-areas when Business Unit changes
-        // AND update months when Year changes
-        // AND update days when Month changes
         getFilterOptions(filters.businessUnit, filters.year, filters.month).then(res => {
             setOptions(prev => ({
                 ...prev,
@@ -58,28 +55,19 @@ export default function AnalyticsPage() {
         })
     }, [filters.businessUnit, filters.year, filters.month])
 
-    // Reload data when filters change
     useEffect(() => {
         loadData()
     }, [filters, loadData])
 
-
     const handleFilterChange = (key: string, value: any) => {
         setFilters(prev => {
             const newFilters = { ...prev, [key]: value }
-            // Reset subArea if businessUnit changes
-            if (key === 'businessUnit') {
-                newFilters.subArea = 'all'
-            }
-            // Reset month/day if year changes
+            if (key === 'businessUnit') newFilters.subArea = 'all'
             if (key === 'year') {
                 newFilters.month = undefined
                 newFilters.day = undefined
             }
-            // Reset day if month changes
-            if (key === 'month') {
-                newFilters.day = undefined
-            }
+            if (key === 'month') newFilters.day = undefined
             return newFilters
         })
     }
@@ -101,22 +89,31 @@ export default function AnalyticsPage() {
         XLSX.writeFile(workbook, `resultados_unidad_negocio_${format(new Date(), 'yyyyMMdd')}.xlsx`)
     }
 
-    const exportDetailedResultsToExcel = () => {
-        if (!data?.detailedResults) return
+    const exportDetailedResultsToExcel = async () => {
+        setExporting(true)
+        try {
+            // Fetch full data on demand
+            const fullData = await getExportData(filters)
+            if (!fullData || fullData.length === 0) return
 
-        const workbook = XLSX.utils.book_new()
-        const worksheetData = data.detailedResults.map((result: any) => ({
-            'Fecha': format(new Date(result.date), 'dd/MM/yyyy'),
-            'Nombre': result.workerName,
-            'RUT': result.workerRut,
-            'Unidad de Negocio': result.businessUnit,
-            'Sub-área': result.subArea,
-            'Resultado': result.status === 'SAFE' ? 'Seguro' : result.status === 'UNSAFE' ? 'Inseguro' : 'Neutro'
-        }))
+            const workbook = XLSX.utils.book_new()
+            const worksheetData = fullData.map((result: any) => ({
+                'Fecha': format(new Date(result.date), 'dd/MM/yyyy'),
+                'Nombre': result.workerName,
+                'RUT': result.workerRut,
+                'Unidad de Negocio': result.businessUnit,
+                'Sub-área': result.subArea,
+                'Resultado': result.status === 'SAFE' ? 'Seguro' : result.status === 'UNSAFE' ? 'Inseguro' : 'Neutro'
+            }))
 
-        const worksheet = XLSX.utils.json_to_sheet(worksheetData)
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Resultados Individuales')
-        XLSX.writeFile(workbook, `resultados_individuales_${format(new Date(), 'yyyyMMdd')}.xlsx`)
+            const worksheet = XLSX.utils.json_to_sheet(worksheetData)
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Resultados Individuales')
+            XLSX.writeFile(workbook, `resultados_individuales_${format(new Date(), 'yyyyMMdd')}.xlsx`)
+        } catch (error) {
+            console.error("Failed to export", error)
+        } finally {
+            setExporting(false)
+        }
     }
 
     return (
@@ -317,14 +314,18 @@ export default function AnalyticsPage() {
                             {data.detailedResults && (
                                 <Card>
                                     <CardHeader className="flex flex-row items-center justify-between">
-                                        <CardTitle>Resultados Individuales</CardTitle>
+                                        <div className="space-y-1">
+                                            <CardTitle>Resultados Individuales</CardTitle>
+                                            <p className="text-sm text-slate-500">Mostrando últimos 100 registros (Exportar para ver todo)</p>
+                                        </div>
                                         <Button
                                             variant="outline"
                                             size="sm"
                                             onClick={exportDetailedResultsToExcel}
+                                            disabled={exporting}
                                             className="flex items-center gap-2"
                                         >
-                                            <Download className="w-4 h-4" />
+                                            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                                             Exportar a Excel
                                         </Button>
                                     </CardHeader>

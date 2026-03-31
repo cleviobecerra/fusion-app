@@ -1,12 +1,13 @@
 'use server'
 
-import { cookies } from 'next/headers'
+import { getSession } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 export async function saveResult(workerId: string, status: string | null) {
-    const userId = (await cookies()).get('userId')?.value
+    const session = await getSession()
+    const userId = session?.userId
     if (!userId) throw new Error('Unauthorized')
 
     if (status === null) {
@@ -46,7 +47,8 @@ export async function saveResult(workerId: string, status: string | null) {
 }
 
 export async function finalizeRequest(requestId: string) {
-    const userId = (await cookies()).get('userId')?.value
+    const session = await getSession()
+    const userId = session?.userId
     if (!userId) throw new Error('Unauthorized')
 
     // Update Request Status
@@ -60,7 +62,7 @@ export async function finalizeRequest(requestId: string) {
         where: { requestId },
         select: { id: true }
     })
-    const workerIds = workers.map(w => w.id)
+    const workerIds = workers.map((w: any) => w.id)
 
     // Mark results as published (not draft)
     await prisma.testResult.updateMany({

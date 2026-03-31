@@ -1,7 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-import { saveResult } from '@/app/actions/testing'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { CheckCircle, AlertTriangle, XCircle, Loader2 } from 'lucide-react'
@@ -19,22 +17,16 @@ interface WorkerCardProps {
             notes?: string | null
         } | null
     }
-    initialStatus?: string | null
+    status?: string | null
+    onStatusChange: (newStatus: string | null) => void
+    isUpdating?: boolean
 }
 
-export function WorkerCard({ worker, initialStatus }: WorkerCardProps) {
-    const [status, setStatus] = useState<string | null>(initialStatus || null)
-    const [saving, setSaving] = useState(false)
+export function WorkerCard({ worker, status, onStatusChange, isUpdating = false }: WorkerCardProps) {
 
-    const handleStatusChange = async (newStatus: string) => {
-        const nextStatus = status === newStatus ? null : newStatus
-        setStatus(nextStatus)
-        setSaving(true)
-        try {
-            await saveResult(worker.id, nextStatus)
-        } finally {
-            setSaving(false)
-        }
+    const handleStatusClick = (clickedStatus: string) => {
+        const nextStatus = status === clickedStatus ? null : clickedStatus
+        onStatusChange(nextStatus)
     }
 
     return (
@@ -64,9 +56,10 @@ export function WorkerCard({ worker, initialStatus }: WorkerCardProps) {
                 <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleStatusChange('SAFE')}
+                    onClick={() => handleStatusClick('SAFE')}
+                    disabled={isUpdating}
                     className={cn(
-                        "flex-1 sm:flex-none border-green-200 hover:bg-green-50 hover:text-green-700",
+                        "flex-1 sm:flex-none border-green-200 hover:bg-green-50 hover:text-green-700 transition-colors",
                         status === 'SAFE' && "bg-green-100 text-green-700 border-green-500 ring-1 ring-green-500"
                     )}
                 >
@@ -76,9 +69,10 @@ export function WorkerCard({ worker, initialStatus }: WorkerCardProps) {
                 <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleStatusChange('NEUTRAL')}
+                    onClick={() => handleStatusClick('NEUTRAL')}
+                    disabled={isUpdating}
                     className={cn(
-                        "flex-1 sm:flex-none border-yellow-200 hover:bg-yellow-50 hover:text-yellow-700",
+                        "flex-1 sm:flex-none border-yellow-200 hover:bg-yellow-50 hover:text-yellow-700 transition-colors",
                         status === 'NEUTRAL' && "bg-yellow-100 text-yellow-700 border-yellow-500 ring-1 ring-yellow-500"
                     )}
                 >
@@ -88,9 +82,10 @@ export function WorkerCard({ worker, initialStatus }: WorkerCardProps) {
                 <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleStatusChange('UNSAFE')}
+                    onClick={() => handleStatusClick('UNSAFE')}
+                    disabled={isUpdating}
                     className={cn(
-                        "flex-1 sm:flex-none border-red-200 hover:bg-red-50 hover:text-red-700",
+                        "flex-1 sm:flex-none border-red-200 hover:bg-red-50 hover:text-red-700 transition-colors",
                         status === 'UNSAFE' && "bg-red-100 text-red-700 border-red-500 ring-1 ring-red-500"
                     )}
                 >
@@ -99,7 +94,7 @@ export function WorkerCard({ worker, initialStatus }: WorkerCardProps) {
                 </Button>
 
                 <div className="w-6 flex justify-center">
-                    {saving && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+                    {isUpdating && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
                 </div>
             </div>
         </Card >

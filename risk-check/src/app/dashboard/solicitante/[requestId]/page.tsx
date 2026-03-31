@@ -68,7 +68,7 @@ export default async function RequestResultPage({ params }: { params: Promise<{ 
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {request.workers.map((worker) => (
+                        {request.workers.map((worker: any) => (
                             <TableRow key={worker.id} className="hover:bg-slate-50/50">
                                 <TableCell className="font-medium text-slate-900">{worker.name}</TableCell>
                                 <TableCell className="text-slate-500">{worker.rut}</TableCell>

@@ -1,6 +1,7 @@
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -9,8 +10,10 @@ generator client {
 
 model User {
   id       String @id @default(uuid())
+  email    String @unique
+  password String @default("$2a$10$abcdef...placeholder") // Temporary default to avoid migration failure on existing data
   name     String
-  role     String // 'SOLICITANTE' | 'TESTEADOR'
+  role     String // 'ADMIN', 'SOLICITANTE', 'TESTEADOR'
   requests TestRequest[]
 }
 
@@ -22,6 +25,9 @@ model TestRequest {
   solicitanteId String
   solicitante   User     @relation(fields: [solicitanteId], references: [id])
   workers       Worker[]
+
+  @@index([scheduledFor])
+  @@index([solicitanteId])
 }
 
 model Worker {
@@ -34,6 +40,9 @@ model Worker {
   requestId    String
   testRequest  TestRequest @relation(fields: [requestId], references: [id])
   result       TestResult?
+
+  @@index([businessUnit])
+  @@index([subArea])
 }
 
 model TestResult {
@@ -44,4 +53,7 @@ model TestResult {
   isDraft   Boolean @default(true)
   isHistorical Boolean @default(false)
   notes     String?
+
+  @@index([status])
+  @@index([isHistorical])
 }

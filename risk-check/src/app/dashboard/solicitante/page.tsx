@@ -1,5 +1,4 @@
 import prisma from '@/lib/prisma'
-import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -7,9 +6,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Eye } from 'lucide-react'
+import { getSession } from '@/lib/auth'
 
 export default async function SolicitanteDashboard() {
-    const userId = (await cookies()).get('userId')?.value
+    const session = await getSession()
+    const userId = session?.userId
     const requests = await prisma.testRequest.findMany({
         where: { solicitanteId: userId },
         include: { workers: true },
@@ -36,7 +37,7 @@ export default async function SolicitanteDashboard() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {requests.map((req) => (
+                        {requests.map((req: any) => (
                             <TableRow key={req.id} className="hover:bg-slate-50/50">
                                 <TableCell className="font-medium text-slate-900 capitalize">
                                     {format(new Date(req.scheduledFor), "PPP", { locale: es })}

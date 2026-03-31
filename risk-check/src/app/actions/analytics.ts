@@ -1,12 +1,12 @@
 'use server'
 
 import prisma from '@/lib/prisma'
-import { cookies } from 'next/headers'
+import { getSession } from '@/lib/auth'
 
 export async function getFilterOptions(businessUnit?: string, year?: string, month?: string) {
-    const cookieStore = await cookies()
-    const userId = cookieStore.get('userId')?.value
-    const userRole = cookieStore.get('userRole')?.value?.toUpperCase()
+    const session = await getSession()
+    const userId = session?.userId
+    const userRole = session?.role?.toUpperCase()
 
     if (!userId) return { businessUnits: [], subAreas: [], years: [], months: [], days: [] }
 
@@ -34,7 +34,7 @@ export async function getFilterOptions(businessUnit?: string, year?: string, mon
     const monthsSet = new Set<string>()
     const daysSet = new Set<string>()
 
-    results.forEach(res => {
+    results.forEach((res: any) => {
         const d = new Date(res.worker.testRequest.scheduledFor)
         const reqYear = d.getFullYear().toString()
         const reqMonth = (d.getMonth() + 1).toString()
@@ -78,8 +78,8 @@ export async function getFilterOptions(businessUnit?: string, year?: string, mon
     const days = Array.from(daysSet).map(Number).sort((a, b) => a - b).map(String)
 
     return {
-        businessUnits: units.map(u => u.businessUnit).filter(Boolean),
-        subAreas: areas.map(a => a.subArea).filter(Boolean),
+        businessUnits: units.map((u: any) => u.businessUnit).filter(Boolean),
+        subAreas: areas.map((a: any) => a.subArea).filter(Boolean),
         years,
         months,
         days
@@ -95,9 +95,9 @@ interface AnalyticsFilters {
 }
 
 export async function getAnalyticsData(filters?: AnalyticsFilters) {
-    const cookieStore = await cookies()
-    const userId = cookieStore.get('userId')?.value
-    const userRole = cookieStore.get('userRole')?.value
+    const session = await getSession()
+    const userId = session?.userId
+    const userRole = session?.role
 
     if (!userId) return null
 
@@ -153,60 +153,76 @@ export async function getAnalyticsData(filters?: AnalyticsFilters) {
 
     console.log('Fetching analytics with where:', JSON.stringify(whereClause, null, 2))
 
-    // Fetch all relevant results
-    const results = await prisma.testResult.findMany({
-        where: whereClause,
-        include: {
-            worker: {
-                select: {
-                    name: true,
-                    rut: true,
-                    businessUnit: true,
-                    subArea: true,
-                    testRequest: {
-                        select: { scheduledFor: true }
+    // ... (previous code)
+
+    // Execute queries in parallel
+    const [totalProcessed, trendsRaw, resultsForStats, detailedResultsRaw] = await Promise.all([
+        // 1. Total count
+        prisma.testResult.count({ where: whereClause }),
+
+        // 2. Trends (Needs date)
+        prisma.testResult.findMany({
+            where: { ...whereClause, isHistorical: false },
+            select: { status: true, worker: { select: { testRequest: { select: { scheduledFor: true } } } } }
+        }),
+
+        // 3. Business Unit Stats & Pass Rate (Needs unit + status)
+        prisma.testResult.findMany({
+            where: { ...whereClause, isHistorical: false },
+            select: { status: true, worker: { select: { businessUnit: true } } }
+        }),
+
+        // 4. Detailed Results (Limited to latest 100 for UI performance)
+        prisma.testResult.findMany({
+            where: { ...whereClause, isHistorical: false },
+            include: {
+                worker: {
+                    select: {
+                        name: true,
+                        rut: true,
+                        businessUnit: true,
+                        subArea: true,
+                        testRequest: {
+                            select: { scheduledFor: true }
+                        }
                     }
                 }
-            }
-        },
-        orderBy: {
-            worker: {
-                testRequest: { scheduledFor: 'asc' }
-            }
-        }
-    })
+            },
+            orderBy: {
+                worker: {
+                    testRequest: { scheduledFor: 'desc' } // Newest first
+                }
+            },
+            take: 100 // Limit for UI rendering
+        })
+    ])
 
+    // Calculate Counts from resultsForStats (since it has all non-historical rows)
+    const realTestsCount = resultsForStats.length
+    const historicalCount = totalProcessed - realTestsCount // Approximate if we assume total = real + historical
+    // Wait, totalProcessed is count(*). realTestsCount is count(* where !isHistorical).
+    // So historical = total - real. Correct.
 
-    // Calculate Totals
-    const totalProcessed = results.length
-    const historicalCount = results.filter(r => r.isHistorical).length
-    const realResults = results.filter(r => !r.isHistorical)
-    const realTestsCount = realResults.length
+    const passed = resultsForStats.filter((r: any) => r.status === 'SAFE').length
+    const failed = resultsForStats.filter((r: any) => r.status === 'UNSAFE').length
+    const neutral = resultsForStats.filter((r: any) => r.status === 'NEUTRAL').length
 
-    // Pass Rates (Calculated ONLY on REAL tests)
-
-    const passed = realResults.filter(r => r.status === 'SAFE').length
-    const failed = realResults.filter(r => r.status === 'UNSAFE').length
-    const neutral = realResults.filter(r => r.status === 'NEUTRAL').length
-
-    // Status Distribution for Pie Chart
+    // Status Distribution
     const statusDistribution = [
         { name: 'Seguro', value: passed, fill: '#22c55e' },
         { name: 'Inseguro', value: failed, fill: '#ef4444' },
         { name: 'Neutro', value: neutral, fill: '#eab308' },
-    ].filter(i => i.value > 0)
+    ].filter((i: any) => i.value > 0)
 
-    // Monthly Trends for Bar Chart
+    // Monthly Trends
     const trendsMap = new Map<string, { date: string, total: number, safe: number, unsafe: number, neutral: number }>()
 
-    realResults.forEach(res => {
+    trendsRaw.forEach((res: any) => {
         const date = new Date(res.worker.testRequest.scheduledFor)
-        const key = `${date.getMonth() + 1}/${date.getFullYear()}` // MM/YYYY
-
+        const key = `${date.getMonth() + 1}/${date.getFullYear()}`
         if (!trendsMap.has(key)) {
             trendsMap.set(key, { date: key, total: 0, safe: 0, unsafe: 0, neutral: 0 })
         }
-
         const entry = trendsMap.get(key)!
         entry.total++
         if (res.status === 'SAFE') entry.safe++
@@ -221,11 +237,11 @@ export async function getAnalyticsData(filters?: AnalyticsFilters) {
             return yA - yB || mA - mB
         })
 
-    // Business Unit Stats for Table
+    // Business Unit Stats
     const buStatsMap = new Map<string, { unit: string, safe: number, neutral: number, unsafe: number, total: number }>()
 
-    realResults.forEach(res => {
-        const unit = res.worker.businessUnit || 'Sin Unidad' // Handle potential nulls though schema implies string
+    resultsForStats.forEach((res: any) => {
+        const unit = res.worker.businessUnit || 'Sin Unidad'
         if (!buStatsMap.has(unit)) {
             buStatsMap.set(unit, { unit, safe: 0, neutral: 0, unsafe: 0, total: 0 })
         }
@@ -238,11 +254,11 @@ export async function getAnalyticsData(filters?: AnalyticsFilters) {
 
     const businessUnitStats = Array.from(buStatsMap.values()).sort((a, b) => b.total - a.total)
 
-    // Detailed Results for Individual Table
-    const detailedResults = realResults.map(r => ({
+    // Detailed Results (Mapped from Limited Fetch)
+    const detailedResults = detailedResultsRaw.map((r: any) => ({
         id: r.id,
         date: r.worker.testRequest.scheduledFor,
-        workerName: r.worker.name || 'Sin Nombre', // Schema might allow nulls? Worker usually has name.
+        workerName: r.worker.name || 'Sin Nombre',
         workerRut: r.worker.rut,
         businessUnit: r.worker.businessUnit,
         subArea: r.worker.subArea,
@@ -259,4 +275,72 @@ export async function getAnalyticsData(filters?: AnalyticsFilters) {
         businessUnitStats,
         detailedResults
     }
+}
+
+export async function getExportData(filters?: AnalyticsFilters) {
+    const session = await getSession()
+    const userId = session?.userId
+    const userRole = session?.role
+
+    if (!userId) return null
+
+    const workerQuery: any = { testRequest: {} }
+    if (userRole?.toUpperCase() === 'SOLICITANTE') {
+        workerQuery.testRequest.solicitanteId = userId
+    }
+
+    if (filters?.year) {
+        const year = parseInt(filters.year)
+        let startDate = new Date(year, 0, 1)
+        let endDate = new Date(year, 11, 31, 23, 59, 59)
+
+        if (filters.month) {
+            const month = parseInt(filters.month)
+            if (filters.day) {
+                const day = parseInt(filters.day)
+                startDate = new Date(year, month - 1, day, 0, 0, 0)
+                endDate = new Date(year, month - 1, day, 23, 59, 59)
+            } else {
+                startDate = new Date(year, month - 1, 1)
+                endDate = new Date(year, month, 0, 23, 59, 59)
+            }
+        }
+        workerQuery.testRequest.scheduledFor = { gte: startDate, lte: endDate }
+    }
+
+    if (filters?.businessUnit && filters.businessUnit !== 'all') {
+        workerQuery.businessUnit = filters.businessUnit
+    }
+
+    if (filters?.subArea && filters.subArea !== 'all') {
+        workerQuery.subArea = filters.subArea
+    }
+
+    const whereClause = { worker: workerQuery }
+
+    const results = await prisma.testResult.findMany({
+        where: { ...whereClause, isHistorical: false }, // Exports usually want real data? Or all? Let's assume real for now as per previous logic.
+        include: {
+            worker: {
+                select: {
+                    name: true,
+                    rut: true,
+                    businessUnit: true,
+                    subArea: true,
+                    testRequest: { select: { scheduledFor: true } }
+                }
+            }
+        },
+        orderBy: { worker: { testRequest: { scheduledFor: 'asc' } } }
+    })
+
+    return results.map((r: any) => ({
+        id: r.id,
+        date: r.worker.testRequest.scheduledFor,
+        workerName: r.worker.name || 'Sin Nombre',
+        workerRut: r.worker.rut,
+        businessUnit: r.worker.businessUnit,
+        subArea: r.worker.subArea,
+        status: r.status
+    }))
 }

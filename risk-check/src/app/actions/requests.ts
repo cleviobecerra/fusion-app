@@ -6,9 +6,11 @@ import * as XLSX from 'xlsx'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
+import { getSession } from '@/lib/auth'
+
 export async function createRequest(formData: FormData) {
-    const cookieStore = await cookies()
-    const userId = cookieStore.get('userId')?.value
+    const session = await getSession()
+    const userId = session?.userId as string
 
     if (!userId) {
         throw new Error('Unauthorized')
@@ -39,7 +41,7 @@ export async function createRequest(formData: FormData) {
     const sixMonthsAgo = new Date()
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
-    const ruts = rows.map(r => String(r.rut || r.RUT || r.Rut || 'S/N')).filter(r => r !== 'S/N')
+    const ruts = rows.map((r: any) => String(r.rut || r.RUT || r.Rut || 'S/N')).filter((r: any) => r !== 'S/N')
 
     // Find latest valid result for each RUT
     const pastResults = await prisma.testResult.findMany({
@@ -67,7 +69,7 @@ export async function createRequest(formData: FormData) {
     })
 
     const historyMap = new Map<string, { status: string, date: Date }>()
-    pastResults.forEach(res => {
+    pastResults.forEach((res: any) => {
         if (!historyMap.has(res.worker.rut)) {
             historyMap.set(res.worker.rut, {
                 status: res.status,
@@ -83,7 +85,7 @@ export async function createRequest(formData: FormData) {
             scheduledFor,
             status: 'PENDING',
             workers: {
-                create: rows.map((row) => {
+                create: rows.map((row: any) => {
                     const rut = String(row.rut || row.RUT || row.Rut || 'S/N')
                     const history = historyMap.get(rut)
 

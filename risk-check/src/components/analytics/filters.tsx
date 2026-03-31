@@ -45,7 +45,7 @@ export function AnalyticsFilters({ options, filters, onChange }: AnalyticsFilter
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">Todos</SelectItem>
-                        {options.years?.map(y => (
+                        {options.years?.map((y: string) => (
                             <SelectItem key={y} value={y}>{y}</SelectItem>
                         ))}
                     </SelectContent>
@@ -64,7 +64,7 @@ export function AnalyticsFilters({ options, filters, onChange }: AnalyticsFilter
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">Todos</SelectItem>
-                        {options.months?.map(m => (
+                        {options.months?.map((m: string) => (
                             <SelectItem key={m} value={m}>{MONTH_NAMES[parseInt(m) - 1]}</SelectItem>
                         ))}
                     </SelectContent>
@@ -83,7 +83,7 @@ export function AnalyticsFilters({ options, filters, onChange }: AnalyticsFilter
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">Todos</SelectItem>
-                        {options.days?.map(d => (
+                        {options.days?.map((d: string) => (
                             <SelectItem key={d} value={d}>{d.padStart(2, '0')}</SelectItem>
                         ))}
                     </SelectContent>
@@ -98,7 +98,7 @@ export function AnalyticsFilters({ options, filters, onChange }: AnalyticsFilter
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">Todas</SelectItem>
-                        {options.businessUnits.map(u => (
+                        {options.businessUnits.map((u: string) => (
                             <SelectItem key={u} value={u}>{u}</SelectItem>
                         ))}
                     </SelectContent>
@@ -113,7 +113,7 @@ export function AnalyticsFilters({ options, filters, onChange }: AnalyticsFilter
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">Todas</SelectItem>
-                        {options.subAreas.map(a => (
+                        {options.subAreas.map((a: string) => (
                             <SelectItem key={a} value={a}>{a}</SelectItem>
                         ))}
                     </SelectContent>
