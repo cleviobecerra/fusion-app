@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Upload as UploadIcon, Users, List, Truck } from 'lucide-react';
+import { LogOut, Upload as UploadIcon, Users, List, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FileUpload } from '../components/FileUpload';
 import { AdminPanel } from '../components/AdminPanel';
 import { OrderList } from '../components/OrderList';
@@ -13,46 +13,132 @@ export function Dashboard() {
 
     const [activeTab, setActiveTab] = useState<'orders' | 'upload' | 'admin' | 'driver'>('orders');
     const [refreshOrders, setRefreshOrders] = useState(0);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
 
-    // Default to driver view if role is DRIVER
     useEffect(() => {
-        if (isDriver) {
-            setActiveTab('driver');
-        } else if (isAdmin) {
-            // Keep orders as default for Admin
-        }
-    }, [isDriver, isAdmin]);
+        if (isDriver) setActiveTab('driver');
+    }, [isDriver]);
 
     const handleUploadSuccess = () => {
         setActiveTab('orders');
         setRefreshOrders(prev => prev + 1);
     };
 
+    const collapsed = !sidebarOpen;
+
     return (
         <div className="app-shell">
-            {/* Sidebar Global */}
-            <aside className="sidebar-global">
-                <div className="flex items-center gap-3 px-6 py-8 border-b" style={{ borderColor: 'var(--color-border)' }}>
-                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">F</div>
-                    <h2 className="text-xl font-bold tracking-tight m-0">Fusion App</h2>
+
+            {/* ── Sidebar ── */}
+            <aside style={{
+                position: 'sticky',
+                top: 0,
+                height: '100vh',
+                width: collapsed ? '64px' : '260px',
+                minWidth: collapsed ? '64px' : '260px',
+                transition: 'width 240ms ease, min-width 240ms ease',
+                overflow: 'visible',          /* allow toggle btn to bleed outside */
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: 'var(--color-sidebar)',
+                borderRight: '1px solid var(--color-border)',
+                zIndex: 50,
+            }}>
+
+                {/* ── Toggle button – floating on the right border ── */}
+                <button
+                    onClick={() => setSidebarOpen(v => !v)}
+                    title={collapsed ? 'Abrir panel' : 'Cerrar panel'}
+                    style={{
+                        position: 'absolute',
+                        top: '72px',
+                        right: '-13px',
+                        width: '26px',
+                        height: '26px',
+                        borderRadius: '50%',
+                        border: '1px solid var(--color-border)',
+                        background: '#fff',
+                        boxShadow: '0 1px 6px rgba(0,0,0,0.12)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--color-neutral-500)',
+                        zIndex: 60,
+                        transition: 'background 150ms, color 150ms, border-color 150ms',
+                    }}
+                    onMouseEnter={e => {
+                        const b = e.currentTarget as HTMLButtonElement;
+                        b.style.background = 'var(--color-primary)';
+                        b.style.color = '#fff';
+                        b.style.borderColor = 'var(--color-primary)';
+                    }}
+                    onMouseLeave={e => {
+                        const b = e.currentTarget as HTMLButtonElement;
+                        b.style.background = '#fff';
+                        b.style.color = 'var(--color-neutral-500)';
+                        b.style.borderColor = 'var(--color-border)';
+                    }}
+                >
+                    {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
+                </button>
+
+                {/* ── Logo row ── */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: collapsed ? '1.5rem 0' : '1.5rem 1.25rem',
+                    marginTop: '0.75rem',
+                    borderBottom: '1px solid var(--color-border)',
+                    justifyContent: collapsed ? 'center' : 'flex-start',
+                    overflow: 'hidden',
+                }}>
+                    {/* Logo square – always visible */}
+                    <div style={{
+                        width: '34px',
+                        height: '34px',
+                        minWidth: '34px',
+                        background: 'linear-gradient(135deg, #3ecf8e 0%, #2eb875 100%)',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 3px 8px rgba(62,207,142,0.35)',
+                        flexShrink: 0,
+                    }}>
+                        <span style={{ color: '#fff', fontWeight: 800, fontSize: '15px', lineHeight: 1 }}>F</span>
+                    </div>
+
+                    {!collapsed && (
+                        <span style={{ fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+                            Fusion App
+                        </span>
+                    )}
                 </div>
 
-                <nav className="sidebar-nav">
+                {/* ── Nav ── */}
+                <nav style={{ flex: 1, padding: '1rem 0.625rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                     {!isDriver && (
                         <>
                             <button
                                 className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('orders')}
+                                title={collapsed ? 'Gestión Logística' : undefined}
+                                style={{ justifyContent: collapsed ? 'center' : undefined, padding: collapsed ? '0.625rem' : undefined }}
                             >
-                                <List size={18} />
-                                <span>Gestión Logística</span>
+                                <List size={18} style={{ flexShrink: 0 }} />
+                                {!collapsed && <span>Gestión Logística</span>}
                             </button>
+
                             <button
                                 className={`nav-item ${activeTab === 'upload' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('upload')}
+                                title={collapsed ? 'Subir Archivos' : undefined}
+                                style={{ justifyContent: collapsed ? 'center' : undefined, padding: collapsed ? '0.625rem' : undefined }}
                             >
-                                <UploadIcon size={18} />
-                                <span>Subir Archivos</span>
+                                <UploadIcon size={18} style={{ flexShrink: 0 }} />
+                                {!collapsed && <span>Subir Archivos</span>}
                             </button>
                         </>
                     )}
@@ -61,9 +147,11 @@ export function Dashboard() {
                         <button
                             className={`nav-item ${activeTab === 'driver' ? 'active' : ''}`}
                             onClick={() => setActiveTab('driver')}
+                            title={collapsed ? 'Mis Entregas' : undefined}
+                            style={{ justifyContent: collapsed ? 'center' : undefined, padding: collapsed ? '0.625rem' : undefined }}
                         >
-                            <Truck size={18} />
-                            <span>Mis Entregas</span>
+                            <Truck size={18} style={{ flexShrink: 0 }} />
+                            {!collapsed && <span>Mis Entregas</span>}
                         </button>
                     )}
 
@@ -71,37 +159,49 @@ export function Dashboard() {
                         <button
                             className={`nav-item ${activeTab === 'admin' ? 'active' : ''}`}
                             onClick={() => setActiveTab('admin')}
+                            title={collapsed ? 'Administración' : undefined}
+                            style={{ justifyContent: collapsed ? 'center' : undefined, padding: collapsed ? '0.625rem' : undefined }}
                         >
-                            <Users size={18} />
-                            <span>Administración</span>
+                            <Users size={18} style={{ flexShrink: 0 }} />
+                            {!collapsed && <span>Administración</span>}
                         </button>
                     )}
                 </nav>
 
-                <div className="mt-auto p-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-                    <div className="flex items-center gap-3 px-2 py-2 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center text-xs font-bold text-neutral-600">
-                            {profile?.full_name?.charAt(0) || 'U'}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-semibold truncate">{profile?.full_name || 'Usuario'}</span>
-                            <span className="text-xs text-muted truncate uppercase">{profile?.role}</span>
-                        </div>
+                {/* ── Profile (only when expanded) ── */}
+                {!collapsed && (
+                    <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid var(--color-border)' }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 600, padding: '0 0.5rem' }}>
+                            {profile?.full_name || 'Usuario'}
+                        </span>
                     </div>
-                    <button onClick={signOut} className="nav-item text-danger hover:bg-red-50 hover:text-red-600">
-                        <LogOut size={18} />
-                        <span>Cerrar Sesión</span>
+                )}
+
+                {/* ── Logout ── */}
+                <div style={{ padding: '0.5rem 0.625rem 1rem' }}>
+                    <button
+                        onClick={signOut}
+                        title={collapsed ? 'Cerrar Sesión' : undefined}
+                        className="nav-item"
+                        style={{
+                            justifyContent: collapsed ? 'center' : undefined,
+                            padding: collapsed ? '0.625rem' : undefined,
+                            color: 'var(--color-danger)',
+                        }}
+                    >
+                        <LogOut size={18} style={{ flexShrink: 0, color: 'var(--color-danger)' }} />
+                        {!collapsed && <span>Cerrar Sesión</span>}
                     </button>
                 </div>
             </aside>
 
-            {/* Main Layout Area */}
+            {/* ── Main Layout ── */}
             <div className="main-layout">
                 <header className="top-header">
                     <div className="flex items-center gap-2 text-sm text-muted">
                         <span>Dashboard</span>
-                        <span className="text-neutral-300">/</span>
-                        <span className="font-medium text-neutral-900 capitalize">
+                        <span style={{ color: 'var(--color-neutral-300)' }}>/</span>
+                        <span style={{ fontWeight: 500, color: 'var(--color-neutral-900)' }}>
                             {activeTab === 'orders' && 'Gestión Logística'}
                             {activeTab === 'upload' && 'Subir Archivos'}
                             {activeTab === 'admin' && 'Administración'}
@@ -134,21 +234,10 @@ export function Dashboard() {
                         </div>
 
                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            {activeTab === 'upload' && (
-                                <FileUpload onUploadSuccess={handleUploadSuccess} />
-                            )}
-
-                            {activeTab === 'orders' && (
-                                <OrderList refreshTrigger={refreshOrders} />
-                            )}
-
-                            {activeTab === 'admin' && isAdmin && (
-                                <AdminPanel />
-                            )}
-
-                            {activeTab === 'driver' && isDriver && (
-                                <DriverDashboard />
-                            )}
+                            {activeTab === 'upload' && <FileUpload onUploadSuccess={handleUploadSuccess} />}
+                            {activeTab === 'orders' && <OrderList refreshTrigger={refreshOrders} />}
+                            {activeTab === 'admin' && isAdmin && <AdminPanel />}
+                            {activeTab === 'driver' && isDriver && <DriverDashboard />}
                         </div>
                     </div>
                 </main>
