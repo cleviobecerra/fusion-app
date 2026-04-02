@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Profile, Driver, UserRole } from '../types/database.types';
-import { Shield, UserPlus, Truck, Eye, EyeOff, List, Key } from 'lucide-react';
+import { Shield, UserPlus, Truck, Eye, EyeOff, List, Key, Trash2 } from 'lucide-react';
 
 export function AdminPanel() {
     const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -152,7 +152,8 @@ export function AdminPanel() {
                     email: newUserEmail,
                     password: newUserPassword,
                     full_name: newUserFullName,
-                    role: newUserRole
+                    role: newUserRole,
+                    rut_empresa: newUserRutEmpresa // <-- Enviamos el RUT directamente
                 })
             });
 
@@ -170,30 +171,8 @@ export function AdminPanel() {
                 throw new Error(resData?.error || `Error HTTP ${response.status}`);
             }
 
-            // 🔥 Lógica DRIVER (igual que la tuya, pero más segura)
-            if (newUserRole === 'DRIVER' && newUserRutEmpresa) {
-                await new Promise(r => setTimeout(r, 1200));
-
-                const { data: latestProfiles, error } = await supabase
-                    .from('profiles')
-                    .select('id')
-                    .eq('full_name', newUserFullName)
-                    .eq('role', 'DRIVER')
-                    .order('created_at', { ascending: false })
-                    .limit(1);
-
-                if (!error && latestProfiles?.length > 0) {
-                    const { error: updateError } = await supabase
-                        .from('profiles')
-                        .update({ rut_empresa: newUserRutEmpresa })
-                        .eq('id', latestProfiles[0].id);
-
-                    if (updateError) {
-                        console.error(updateError);
-                        alert("Usuario creado, pero falló guardar RUT");
-                    }
-                }
-            }
+            // Ya no necesitamos la lógica manual de actualización aquí, 
+            // el trigger de la base de datos se encarga de todo.
 
             // Refresh
             await fetchData();
@@ -212,6 +191,40 @@ export function AdminPanel() {
             alert(err.message || 'Error inesperado');
         } finally {
             setCreatingUser(false);
+        }
+    };
+
+    const handleDeleteUser = async (userId: string, userName: string) => {
+        if (!confirm(`¿Estás seguro de que deseas eliminar a ${userName}? Esta acción no se puede deshacer.`)) return;
+        
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) throw new Error('No estás autenticado');
+
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+            const response = await fetch(`${supabaseUrl}/functions/v1/delete_user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'apikey': supabaseAnonKey
+                },
+                body: JSON.stringify({ target_user_id: userId })
+            });
+
+            if (!response.ok) {
+                const resData = await response.json().catch(() => ({}));
+                throw new Error(resData.error || 'Error al eliminar usuario');
+            }
+
+            alert('Usuario eliminado correctamente');
+            await fetchData();
+        } catch (err: any) {
+            console.error(err);
+            alert(err.message || 'Error al eliminar usuario');
         }
     };
 
@@ -385,6 +398,13 @@ export function AdminPanel() {
                                                 onClick={() => setResetUserId({ id: p.id, name: p.full_name || 'Usuario' })}
                                             >
                                                 <Key size={14} />
+                                            </button>
+                                            <button 
+                                                className="btn btn-outline border-neutral-200 text-red-500 hover:bg-red-50 hover:border-red-200 p-1.5 transition-colors"
+                                                title="Eliminar Usuario"
+                                                onClick={() => handleDeleteUser(p.id, p.full_name || 'Sin Nombre')}
+                                            >
+                                                <Trash2 size={14} />
                                             </button>
                                             <select
                                                 className="form-input text-sm py-1 h-auto inline-block w-32"

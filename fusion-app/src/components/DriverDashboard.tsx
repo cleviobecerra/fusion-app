@@ -56,17 +56,22 @@ export function DriverDashboard() {
                 .getPublicUrl(filePath);
 
             // 3. Update Order status and URL
-            const { error: updateError } = await supabase
+            const { data, error: updateError } = await supabase
                 .from('purchase_orders')
                 .update({
                     status: 'DELIVERED',
                     signed_oc_url: publicUrl,
                     delivery_date: new Date().toISOString().split('T')[0],
-                    delivery_time: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+                    delivery_time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
                 })
-                .eq('id', orderId);
+                .eq('id', orderId)
+                .select();
 
             if (updateError) throw updateError;
+            
+            if (!data || data.length === 0) {
+                throw new Error("No se pudo actualizar la órden. Es posible que no tengas permisos suficientes o que la órden ya no esté asignada a ti.");
+            }
 
             // 4. Update local state
             setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'DELIVERED', signed_oc_url: publicUrl } : o));

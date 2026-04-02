@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 // 🌐 1. Configuración de CORS
@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req: Request) => {
+Deno.serve(async (req) => {
   // Manejo directo de peticiones prevuelo de CORS (OPTIONS)
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -37,16 +37,16 @@ serve(async (req: Request) => {
 
     if (userError || !user) {
       console.error("Token verification failed:", userError?.message);
-      return new Response(JSON.stringify({ error: "Unauthorized user mapping" }), { 
-        status: 401, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      return new Response(JSON.stringify({ error: "Unauthorized user mapping" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
     // 🛡️ 3. Validación de Roles Pro-Nivel: Solo un ADMIN puede crear nuevos perfiles
     // Usamos el Service Key para consultar el perfil del usuario esquivando políticas RLS
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    
+
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("role")
@@ -55,19 +55,19 @@ serve(async (req: Request) => {
 
     if (profile?.role !== "ADMIN") {
       console.warn(`Intento de creación bloqueado. Usuario ${user.email} (Rol: ${profile?.role}) no es ADMIN.`);
-        return new Response(JSON.stringify({ error: "Forbidden: Requiere rol de Administrador." }), { 
-          status: 403, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        });
+      return new Response(JSON.stringify({ error: "Forbidden: Requiere rol de Administrador." }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     // 📦 4. Extraer y Validar Payload
-    const { email, password, full_name, role } = await req.json();
+    const { email, password, full_name, role, rut_empresa } = await req.json();
 
     if (!email || !password || !full_name || !role) {
-      return new Response(JSON.stringify({ error: "Faltan campos obligatorios para el registro" }), { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      return new Response(JSON.stringify({ error: "Faltan campos obligatorios para el registro" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
@@ -81,39 +81,40 @@ serve(async (req: Request) => {
       user_metadata: {
         full_name,
         role,
+        rut_empresa,
       },
     });
 
     if (error) {
       console.error("Fallo al insertar Auth:", error.message);
-      
+
       // Controlando si el correo ya existe
       if (error.status === 422 || error.message.includes("already registered")) {
-        return new Response(JSON.stringify({ error: "Este correo ya está registrado en el sistema." }), { 
-          status: 400, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        return new Response(JSON.stringify({ error: "Este correo ya está registrado en el sistema." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
 
-      return new Response(JSON.stringify({ error: error.message }), { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
     console.log(`Usuario creado exitosamente con ID: ${data.user.id}`);
 
     // 🎉 6. Respuesta Limpia
-    return new Response(JSON.stringify({ success: true, user: data.user }), { 
-      status: 200, 
-      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    return new Response(JSON.stringify({ success: true, user: data.user }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
   } catch (err: any) {
     console.error("Internal Server Error:", err.message);
-    return new Response(JSON.stringify({ error: "Error en el servidor: " + err.message }), { 
-      status: 500, 
-      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    return new Response(JSON.stringify({ error: "Error en el servidor: " + err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 });
