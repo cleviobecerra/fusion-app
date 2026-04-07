@@ -45,13 +45,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             console.log('AUTH EVENT:', event);
 
-            setSession(currentSession);
-            setUser(currentSession?.user ?? null);
-
-            if (currentSession?.user) {
-                fetchProfile(currentSession.user.id); // 👈 SIN await
-            } else {
+            // Si hay un error de token de refresco, el evento suele ser SIGNED_OUT 
+            // pero podemos asegurar que el estado local se limpie.
+            if (event === 'SIGNED_OUT') {
+                setSession(null);
+                setUser(null);
                 setProfile(null);
+            } else {
+                setSession(currentSession);
+                setUser(currentSession?.user ?? null);
+
+                if (currentSession?.user) {
+                    fetchProfile(currentSession.user.id);
+                }
             }
 
             applyLoad();

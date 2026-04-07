@@ -4,8 +4,8 @@ export interface Profile {
     id: string;
     role: UserRole;
     full_name: string | null;
+    email: string | null;
     driver_id: string | null;
-    rut_empresa: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -15,6 +15,8 @@ export interface Driver {
     name: string;
     phone: string | null;
     rut: string | null;
+    patente: string | null;
+    rut_empresa: string | null;
     status: string;
     created_at: string;
 }

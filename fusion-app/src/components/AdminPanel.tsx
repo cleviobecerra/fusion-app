@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { Profile, Driver, UserRole } from '../types/database.types';
-import { Shield, UserPlus, Truck, Eye, EyeOff, List, Key, Trash2 } from 'lucide-react';
+import { Shield, UserPlus, Truck, Eye, EyeOff, List, Key, Trash2, Pencil } from 'lucide-react';
 
 export function AdminPanel() {
+    const { session: authSession } = useAuth();
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [loading, setLoading] = useState(true);
@@ -12,13 +14,18 @@ export function AdminPanel() {
     const [newDriverName, setNewDriverName] = useState('');
     const [newDriverPhone, setNewDriverPhone] = useState('');
     const [newDriverRut, setNewDriverRut] = useState('');
+    const [newDriverPatente, setNewDriverPatente] = useState('');
+    const [newDriverRutEmpresa, setNewDriverRutEmpresa] = useState('');
+
+    // Editing states
+    const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+    const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
 
     // New User state
     const [newUserEmail, setNewUserEmail] = useState('');
     const [newUserPassword, setNewUserPassword] = useState('');
     const [newUserFullName, setNewUserFullName] = useState('');
     const [newUserRole, setNewUserRole] = useState<UserRole>('USER');
-    const [newUserRutEmpresa, setNewUserRutEmpresa] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [creatingUser, setCreatingUser] = useState(false);
 
@@ -112,7 +119,13 @@ export function AdminPanel() {
 
         const { data, error } = await supabase
             .from('drivers')
-            .insert([{ name: newDriverName, phone: newDriverPhone, rut: newDriverRut }])
+            .insert([{ 
+                name: newDriverName, 
+                phone: newDriverPhone, 
+                rut: newDriverRut,
+                patente: newDriverPatente,
+                rut_empresa: newDriverRutEmpresa 
+            }])
             .select();
 
         if (!error && data) {
@@ -120,8 +133,94 @@ export function AdminPanel() {
             setNewDriverName('');
             setNewDriverPhone('');
             setNewDriverRut('');
+            setNewDriverPatente('');
+            setNewDriverRutEmpresa('');
         } else {
-            alert('Error adding driver: ' + error?.message);
+            alert('Error al agregar chofer: ' + error?.message);
+        }
+    };
+
+    const handleDeleteDriver = async (driverId: string, driverName: string) => {
+        if (!confirm(`¿Estás seguro de que deseas eliminar al chofer ${driverName}?`)) return;
+
+        const { error } = await supabase
+            .from('drivers')
+            .delete()
+            .eq('id', driverId);
+
+        if (!error) {
+            setDrivers(drivers.filter(d => d.id !== driverId));
+            // También limpiar el vínculo en los perfiles locales
+            setProfiles(profiles.map(p => p.driver_id === driverId ? { ...p, driver_id: null } : p));
+        } else {
+            alert('Error al eliminar chofer: ' + error.message);
+        }
+    };
+
+    const handleUpdateDriver = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingDriver) return;
+
+        const { error } = await supabase
+            .from('drivers')
+            .update({
+                name: editingDriver.name,
+                phone: editingDriver.phone,
+                rut: editingDriver.rut,
+                patente: editingDriver.patente,
+                rut_empresa: editingDriver.rut_empresa
+            })
+            .eq('id', editingDriver.id);
+
+        if (!error) {
+            setDrivers(drivers.map(d => d.id === editingDriver.id ? editingDriver : d));
+            setEditingDriver(null);
+        } else {
+            alert('Error al actualizar chofer: ' + error.message);
+        }
+    };
+
+    const handleUpdateProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingProfile) return;
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) throw new Error('No estás autenticado.');
+
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+            const response = await fetch(`${supabaseUrl}/functions/v1/update_user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'apikey': supabaseAnonKey
+                },
+                body: JSON.stringify({
+                    target_user_id: editingProfile.id,
+                    email: editingProfile.email,
+                    full_name: editingProfile.full_name
+                })
+            });
+
+            if (!response.ok) {
+                const resData = await response.json().catch(() => ({}));
+                throw new Error(resData.error || 'Error al actualizar perfil');
+            }
+
+            // Sync local state
+            setProfiles(profiles.map(p => p.id === editingProfile.id ? editingProfile : p));
+            setEditingProfile(null);
+            alert('Perfil actualizado correctamente');
+            
+            // Refresh to be safe
+            await fetchData();
+        } catch (err: any) {
+            console.error(err);
+            alert(err.message || 'Error al actualizar perfil');
         }
     };
 
@@ -133,10 +232,14 @@ export function AdminPanel() {
         setCreatingUser(true);
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token;
+            // Se prefiere usar el token de la sesión del contexto si está disponible
+            const token = authSession?.access_token || (await supabase.auth.getSession()).data.session?.access_token;
+            
+            console.log("DEBUG: Intentando crear usuario...");
+            console.log("DEBUG: Token existe:", !!token);
+            if (token) console.log("DEBUG: Token prefix:", token.substring(0, 10));
 
-            if (!token) throw new Error('No estás autenticado');
+            if (!token) throw new Error('No estás autenticado. Por favor, recarga la página.');
 
             const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
             const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -152,8 +255,7 @@ export function AdminPanel() {
                     email: newUserEmail,
                     password: newUserPassword,
                     full_name: newUserFullName,
-                    role: newUserRole,
-                    rut_empresa: newUserRutEmpresa // <-- Enviamos el RUT directamente
+                    role: newUserRole
                 })
             });
 
@@ -168,7 +270,8 @@ export function AdminPanel() {
             }
 
             if (!response.ok) {
-                throw new Error(resData?.error || `Error HTTP ${response.status}`);
+                console.error("DEBUG: Error completo del servidor:", resData);
+                throw new Error(resData?.error || resData?.details || `Error HTTP ${response.status}`);
             }
 
             // Ya no necesitamos la lógica manual de actualización aquí, 
@@ -182,7 +285,6 @@ export function AdminPanel() {
             setNewUserPassword('');
             setNewUserFullName('');
             setNewUserRole('USER');
-            setNewUserRutEmpresa('');
 
             alert('Usuario creado exitosamente');
 
@@ -200,7 +302,7 @@ export function AdminPanel() {
         try {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
-            if (!token) throw new Error('No estás autenticado');
+            if (!token) throw new Error('No estás autenticado. Por favor, recarga la página.');
 
             const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
             const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -236,7 +338,7 @@ export function AdminPanel() {
         try {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
-            if (!token) throw new Error('No estás autenticado');
+            if (!token) throw new Error('No estás autenticado. Por favor, recarga la página.');
 
             const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
             const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -329,12 +431,6 @@ export function AdminPanel() {
                                 <option value="DRIVER">Chofer Autorizado</option>
                             </select>
                         </div>
-                        {newUserRole === 'DRIVER' && (
-                            <div>
-                                <label className="form-label">RUT Empresa</label>
-                                <input className="form-input" placeholder="Ej: 76.123.456-7" value={newUserRutEmpresa} onChange={e => setNewUserRutEmpresa(e.target.value)} required />
-                            </div>
-                        )}
                         <div className="md:col-span-2 pt-6">
                             <button className="btn btn-primary px-8" type="submit" disabled={creatingUser}>
                                 {creatingUser ? 'Creando...' : 'Crear Usuario'}
@@ -356,7 +452,8 @@ export function AdminPanel() {
                         <thead>
                             <tr>
                                 <th>Nombre</th>
-                                <th>Rol & RUT</th>
+                                <th>Email</th>
+                                <th>Rol</th>
                                 <th>Vínculo Chofer</th>
                                 <th className="text-right">Acciones</th>
                             </tr>
@@ -365,13 +462,11 @@ export function AdminPanel() {
                             {profiles.map(p => (
                                 <tr key={p.id}>
                                     <td className="font-medium">{p.full_name || 'Sin Nombre'}</td>
+                                    <td className="text-sm text-muted">{p.email || '-'}</td>
                                     <td>
                                         <span className={`badge ${p.role === 'ADMIN' ? 'badge-primary' : 'badge-neutral'}`}>
                                             {p.role}
                                         </span>
-                                        {p.role === 'DRIVER' && p.rut_empresa && (
-                                            <div className="text-[11px] text-muted font-medium mt-1">RUT: {p.rut_empresa}</div>
-                                        )}
                                     </td>
                                     <td>
                                         {p.role === 'DRIVER' ? (
@@ -392,6 +487,13 @@ export function AdminPanel() {
                                     </td>
                                     <td className="text-right">
                                         <div className="flex items-center justify-end gap-2">
+                                            <button 
+                                                className="btn btn-outline border-neutral-200 text-neutral-500 hover:text-primary hover:border-primary p-1.5 transition-colors"
+                                                title="Editar Perfil"
+                                                onClick={() => setEditingProfile(p)}
+                                            >
+                                                <Pencil size={14} />
+                                            </button>
                                             <button 
                                                 className="btn btn-outline border-neutral-200 text-neutral-500 hover:text-primary hover:border-primary p-1.5 transition-colors"
                                                 title="Cambiar Contraseña"
@@ -436,14 +538,22 @@ export function AdminPanel() {
                     </h3>
                 </div>
                 <div className="card-body">
-                    <form onSubmit={addDriver} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                    <form onSubmit={addDriver} className="grid grid-cols-1 md:grid-cols-5 gap-6 items-end">
                         <div>
                             <label className="form-label">Nombre Completo</label>
                             <input className="form-input" placeholder="Ej: Roberto Gómez" value={newDriverName} onChange={e => setNewDriverName(e.target.value)} required />
                         </div>
                         <div>
-                            <label className="form-label">RUT</label>
+                            <label className="form-label">RUT Personal</label>
                             <input className="form-input" placeholder="12.345.678-9" value={newDriverRut} onChange={e => setNewDriverRut(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="form-label">RUT Empresa</label>
+                            <input className="form-input" placeholder="76.123.456-7" value={newDriverRutEmpresa} onChange={e => setNewDriverRutEmpresa(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="form-label">Patente</label>
+                            <input className="form-input" placeholder="ABCD12" value={newDriverPatente} onChange={e => setNewDriverPatente(e.target.value)} />
                         </div>
                         <div>
                             <label className="form-label">Teléfono</label>
@@ -470,26 +580,47 @@ export function AdminPanel() {
                         <thead>
                             <tr>
                                 <th>Nombre</th>
-                                <th>RUT</th>
-                                <th>Teléfono</th>
-                                <th className="text-right">Estado</th>
+                                <th>RUT Personal</th>
+                                <th>RUT Empresa</th>
+                                <th>Patente</th>
+                                <th className="hidden md:table-cell">Teléfono</th>
+                                <th className="text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {drivers.map(d => (
                                 <tr key={d.id}>
                                     <td className="font-medium">{d.name}</td>
-                                    <td>{d.rut || '-'}</td>
-                                    <td>{d.phone || '-'}</td>
-                                    <td className="text-right">
-                                        <span className={`badge ${d.status === 'active' ? 'badge-success' : 'badge-neutral'}`}>
-                                            {d.status}
+                                    <td className="text-sm">{d.rut || '-'}</td>
+                                    <td className="text-sm">{d.rut_empresa || '-'}</td>
+                                    <td>
+                                        <span className="font-mono text-xs bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200">
+                                            {d.patente || 'N/A'}
                                         </span>
+                                    </td>
+                                    <td className="hidden md:table-cell">{d.phone || '-'}</td>
+                                    <td className="text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button 
+                                                className="btn btn-outline border-neutral-200 text-neutral-500 hover:text-primary hover:border-primary p-1.5 transition-colors"
+                                                title="Editar Chofer"
+                                                onClick={() => setEditingDriver(d)}
+                                            >
+                                                <Pencil size={14} />
+                                            </button>
+                                            <button 
+                                                className="btn btn-outline border-neutral-200 text-red-500 hover:bg-red-50 hover:border-red-200 p-1.5 transition-colors"
+                                                title="Eliminar Chofer"
+                                                onClick={() => handleDeleteDriver(d.id, d.name)}
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
                             {drivers.length === 0 && (
-                                <tr><td colSpan={4} className="p-12 text-center text-neutral-400">No hay choferes registrados</td></tr>
+                                <tr><td colSpan={6} className="p-12 text-center text-neutral-400">No hay choferes registrados</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -619,6 +750,75 @@ export function AdminPanel() {
                                 {isResetting ? 'Guardando...' : 'Cambiar'}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Editar Chofer */}
+            {editingDriver && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md animate-in zoom-in-95 duration-200">
+                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                            <Truck size={18} className="text-primary" />
+                            Editar Chofer
+                        </h3>
+                        <form onSubmit={handleUpdateDriver} className="space-y-4">
+                            <div>
+                                <label className="form-label">Nombre Completo</label>
+                                <input className="form-input" value={editingDriver.name} onChange={e => setEditingDriver({...editingDriver, name: e.target.value})} required />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="form-label">RUT Personal</label>
+                                    <input className="form-input" value={editingDriver.rut || ''} onChange={e => setEditingDriver({...editingDriver, rut: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label className="form-label">Patente</label>
+                                    <input className="form-input" value={editingDriver.patente || ''} onChange={e => setEditingDriver({...editingDriver, patente: e.target.value})} />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="form-label">RUT Empresa</label>
+                                <input className="form-input" value={editingDriver.rut_empresa || ''} onChange={e => setEditingDriver({...editingDriver, rut_empresa: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="form-label">Teléfono</label>
+                                <input className="form-input" value={editingDriver.phone || ''} onChange={e => setEditingDriver({...editingDriver, phone: e.target.value})} />
+                            </div>
+                            <div className="flex gap-3 justify-end pt-4">
+                                <button type="button" className="btn btn-outline" onClick={() => setEditingDriver(null)}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary">Guardar Cambios</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Editar Perfil */}
+            {editingProfile && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md animate-in zoom-in-95 duration-200">
+                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                            <Shield size={18} className="text-primary" />
+                            Editar Perfil de Usuario
+                        </h3>
+                        <form onSubmit={handleUpdateProfile} className="space-y-4">
+                            <div>
+                                <label className="form-label">Nombre Completo</label>
+                                <input className="form-input" value={editingProfile.full_name || ''} onChange={e => setEditingProfile({...editingProfile, full_name: e.target.value})} required />
+                            </div>
+                            <div>
+                                <label className="form-label">Email</label>
+                                <input className="form-input" type="email" value={editingProfile.email || ''} onChange={e => setEditingProfile({...editingProfile, email: e.target.value})} required />
+                            </div>
+                            <div className="bg-neutral-50 p-3 rounded text-xs text-muted leading-relaxed">
+                                <strong>Nota:</strong> Los cambios de Rol y Vínculo de Chofer se realizan directamente en la tabla principal.
+                            </div>
+                            <div className="flex gap-3 justify-end pt-4">
+                                <button type="button" className="btn btn-outline" onClick={() => setEditingProfile(null)}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary">Guardar Cambios</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

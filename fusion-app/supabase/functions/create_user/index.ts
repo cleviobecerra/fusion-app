@@ -31,22 +31,26 @@ Deno.serve(async (req) => {
       throw new Error("Server misconfiguration: SUPABASE_SERVICE_ROLE_KEY is missing");
     }
 
-    // Cliente NORMAL (con los permisos del token recibido)
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    // Admin client para todo: verificar el token del caller Y crear usuarios
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verificar el token usando el admin client (más confiable que el anon)
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
     if (userError || !user) {
-      console.error("Token verification failed:", userError?.message);
-      return new Response(JSON.stringify({ error: "Unauthorized user mapping" }), {
+      console.error("Token verification failed:", userError?.message || "User not found in session");
+      // Logging the first 10 characters of the token for debugging (SAFE)
+      console.log(`Token prefix: ${token.substring(0, 10)}...`);
+      return new Response(JSON.stringify({ 
+        error: "Unauthorized: token inválido o expirado", 
+        details: userError?.message 
+      }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // 🛡️ 3. Validación de Roles Pro-Nivel: Solo un ADMIN puede crear nuevos perfiles
-    // Usamos el Service Key para consultar el perfil del usuario esquivando políticas RLS
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
+    // 🛡️ Validar que sea ADMIN
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("role")

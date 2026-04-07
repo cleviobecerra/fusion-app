@@ -27,9 +27,9 @@ Deno.serve(async (req) => {
       throw new Error("SUPABASE_SERVICE_ROLE_KEY no está configurado");
     }
 
-    // Cliente NORMAL (con los permisos del token recibido)
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    // Admin client para verificar el token y ejecutar operaciones
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "No autorizado" }), { 
@@ -37,9 +37,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cliente ADMIN para consultar el perfil esquivando RLS
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    
     // Validar que el ejecutor SEA ADMIN
     const { data: profile } = await supabaseAdmin
       .from("profiles")

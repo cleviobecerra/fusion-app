@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Upload as UploadIcon, Users, List, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LogOut, Upload as UploadIcon, Users, List, Truck, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
 import { FileUpload } from '../components/FileUpload';
 import { AdminPanel } from '../components/AdminPanel';
 import { OrderList } from '../components/OrderList';
 import { DriverDashboard } from '../components/DriverDashboard';
+import { Reports } from '../components/Reports';
 
 export function Dashboard() {
     const { profile, signOut } = useAuth();
     const isAdmin = profile?.role === 'ADMIN';
     const isDriver = profile?.role === 'DRIVER';
 
-    const [activeTab, setActiveTab] = useState<'orders' | 'upload' | 'admin' | 'driver'>('orders');
+    const [activeTab, setActiveTab] = useState<'orders' | 'upload' | 'admin' | 'driver' | 'reports'>('orders');
     const [refreshOrders, setRefreshOrders] = useState(0);
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -156,15 +157,27 @@ export function Dashboard() {
                     )}
 
                     {isAdmin && (
-                        <button
-                            className={`nav-item ${activeTab === 'admin' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('admin')}
-                            title={collapsed ? 'Administración' : undefined}
-                            style={{ justifyContent: collapsed ? 'center' : undefined, padding: collapsed ? '0.625rem' : undefined }}
-                        >
-                            <Users size={18} style={{ flexShrink: 0 }} />
-                            {!collapsed && <span>Administración</span>}
-                        </button>
+                        <>
+                            <button
+                                className={`nav-item ${activeTab === 'reports' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('reports')}
+                                title={collapsed ? 'Reportes' : undefined}
+                                style={{ justifyContent: collapsed ? 'center' : undefined, padding: collapsed ? '0.625rem' : undefined }}
+                            >
+                                <BarChart3 size={18} style={{ flexShrink: 0 }} />
+                                {!collapsed && <span>Reportes</span>}
+                            </button>
+
+                            <button
+                                className={`nav-item ${activeTab === 'admin' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('admin')}
+                                title={collapsed ? 'Administración' : undefined}
+                                style={{ justifyContent: collapsed ? 'center' : undefined, padding: collapsed ? '0.625rem' : undefined }}
+                            >
+                                <Users size={18} style={{ flexShrink: 0 }} />
+                                {!collapsed && <span>Administración</span>}
+                            </button>
+                        </>
                     )}
                 </nav>
 
@@ -206,6 +219,7 @@ export function Dashboard() {
                             {activeTab === 'upload' && 'Subir Archivos'}
                             {activeTab === 'admin' && 'Administración'}
                             {activeTab === 'driver' && 'Mis Entregas'}
+                            {activeTab === 'reports' && 'Reportes'}
                         </span>
                     </div>
 
@@ -224,12 +238,14 @@ export function Dashboard() {
                                 {activeTab === 'upload' && 'Carga de Datos'}
                                 {activeTab === 'admin' && 'Panel de Administración'}
                                 {activeTab === 'driver' && 'Portal del Chofer'}
+                                {activeTab === 'reports' && 'Reportes y Analítica'}
                             </h1>
                             <p className="text-muted mt-2">
                                 {activeTab === 'orders' && 'Gestiona los estados de entrega y stock en tiempo real.'}
                                 {activeTab === 'upload' && 'Sube archivos Excel o CSV para actualizar el sistema.'}
                                 {activeTab === 'admin' && 'Administra usuarios, choferes y configuraciones globales.'}
                                 {activeTab === 'driver' && 'Visualiza y gestiona tus rutas de entrega asignadas.'}
+                                {activeTab === 'reports' && 'Consulta el rendimiento de ventas, sacos y logística.'}
                             </p>
                         </div>
 
@@ -237,6 +253,7 @@ export function Dashboard() {
                             {activeTab === 'upload' && <FileUpload onUploadSuccess={handleUploadSuccess} />}
                             {activeTab === 'orders' && <OrderList refreshTrigger={refreshOrders} />}
                             {activeTab === 'admin' && isAdmin && <AdminPanel />}
+                            {activeTab === 'reports' && isAdmin && <Reports />}
                             {activeTab === 'driver' && isDriver && <DriverDashboard />}
                         </div>
                     </div>

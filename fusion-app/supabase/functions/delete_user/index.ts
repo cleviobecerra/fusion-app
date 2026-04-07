@@ -25,9 +25,9 @@ Deno.serve(async (req) => {
 
     if (!supabaseServiceKey) throw new Error("Server misconfiguration: SUPABASE_SERVICE_ROLE_KEY is missing");
 
-    // Cliente NORMAL (con los permisos del token recibido)
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    const { data: { user: requester }, error: userError } = await supabase.auth.getUser(token);
+    // Admin client para verificar el token y ejecutar operaciones
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: { user: requester }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
     if (userError || !requester) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -36,8 +36,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 🛡️ 3. Validación de Roles: Solo un ADMIN puede borrar usuarios
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    // 🛡️ Validar que sea ADMIN
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("role")
