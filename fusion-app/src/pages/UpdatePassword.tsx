@@ -93,7 +93,7 @@ export function UpdatePassword() {
     };
 
     return (
-        <div className="flex items-center justify-center bg-neutral-50 px-6" style={{ minHeight: '100vh' }}>
+        <div className="flex items-center justify-center px-6" style={{ minHeight: '100vh', backgroundColor: 'var(--color-background)' }}>
             <div className="w-full max-w-sm">
                 <div className="text-center mb-10">
                     <div 

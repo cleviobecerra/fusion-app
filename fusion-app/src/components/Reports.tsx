@@ -306,13 +306,13 @@ export function Reports() {
 
                         <div className="flex bg-neutral-100 p-1 rounded-lg self-start lg:self-end">
                             <button 
-                                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'weekly' ? 'bg-white shadow-sm text-primary' : 'text-muted hover:text-neutral-900'}`}
+                                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'weekly' ? 'bg-[var(--color-surface)] shadow-sm text-primary' : 'text-muted hover:text-neutral-900'}`}
                                 onClick={() => setViewMode('weekly')}
                             >
                                 Semanal
                             </button>
                             <button 
-                                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'monthly' ? 'bg-white shadow-sm text-primary' : 'text-muted hover:text-neutral-900'}`}
+                                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'monthly' ? 'bg-[var(--color-surface)] shadow-sm text-primary' : 'text-muted hover:text-neutral-900'}`}
                                 onClick={() => setViewMode('monthly')}
                             >
                                 Mensual
@@ -324,7 +324,7 @@ export function Reports() {
 
             {/* ── KPI Grid ── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="col-span-2 lg:col-span-1 card group hover:scale-[1.02] transition-all duration-300 bg-white border border-neutral-200">
+                <div className="col-span-2 lg:col-span-1 card group hover:scale-[1.02] transition-all duration-300 border border-neutral-200">
                     <div className="card-body">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center group-hover:bg-green-600 group-hover:text-white transition-all">
@@ -367,7 +367,7 @@ export function Reports() {
                     </div>
                 </div>
 
-                <div className="card group hover:scale-[1.02] transition-all duration-300 bg-white border border-neutral-200">
+                <div className="card group hover:scale-[1.02] transition-all duration-300 border border-neutral-200">
                     <div className="card-body flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center group-hover:bg-orange-600 group-hover:text-white transition-all">
                             <Package size={24} />
@@ -379,7 +379,7 @@ export function Reports() {
                     </div>
                 </div>
 
-                <div className="card group hover:scale-[1.02] transition-all duration-300 bg-white border border-neutral-200">
+                <div className="card group hover:scale-[1.02] transition-all duration-300 border border-neutral-200">
                     <div className="card-body flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
                             <Layers size={24} />
@@ -391,7 +391,7 @@ export function Reports() {
                     </div>
                 </div>
 
-                <div className="card group hover:scale-[1.02] transition-all duration-300 bg-white border border-neutral-200">
+                <div className="card group hover:scale-[1.02] transition-all duration-300 border border-neutral-200">
                     <div className="card-body flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-all">
                             <TrendingUp size={24} />

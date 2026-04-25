@@ -210,7 +210,7 @@ export function FileUpload({ onUploadSuccess }: { onUploadSuccess: () => void })
                     </p>
 
                     {loading && (
-                        <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center rounded-xl">
+                        <div className="absolute inset-0 bg-[var(--color-surface)]/60 backdrop-blur-[1px] flex items-center justify-center rounded-xl">
                             <div className="flex flex-col items-center gap-3">
                                 <div className="spinner"></div>
                                 <span className="text-xs font-bold text-primary uppercase tracking-wider">Leyendo Datos</span>

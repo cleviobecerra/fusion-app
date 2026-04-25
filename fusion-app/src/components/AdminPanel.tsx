@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { Profile, Driver, UserRole } from '../types/database.types';
-import { Shield, UserPlus, Truck, Eye, EyeOff, List, Key, Trash2, Pencil } from 'lucide-react';
+import { Shield, UserPlus, Truck, Eye, EyeOff, Key, Trash2, Pencil, Users, Archive, Info, Save } from 'lucide-react';
 
 export function AdminPanel() {
     const { session: authSession } = useAuth();
@@ -630,83 +630,106 @@ export function AdminPanel() {
     );
 
     const renderSettings = () => (
-        <div className="max-w-2xl mx-auto">
-            <div className="card">
-                <div className="card-header border-b">
-                    <h3 className="flex items-center gap-2 text-primary">
-                        <Shield size={18} /> Configuración de Parámetros
-                    </h3>
+        <div style={{ width: '100%', maxWidth: '600px', margin: '0 auto' }}>
+            {/* Settings Form Container */}
+            <div style={{ backgroundColor: '#1e293b', padding: '2rem', borderRadius: '0.75rem', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                    <div style={{ width: '3rem', height: '3rem', borderRadius: '9999px', backgroundColor: 'rgba(62, 207, 142, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3ecf8e' }}>
+                        <Shield size={24} />
+                    </div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#f8fafc', margin: 0 }}>Configuración de Parámetros</h3>
                 </div>
-                <div className="card-body space-y-6">
-                    <div>
-                        <label className="form-label font-semibold">Cantidad de sacos por Pallet</label>
-                        <p className="text-sm text-muted mb-4">Define el múltiplo estándar para los cálculos de stock en bodega.</p>
-                        <div className="flex gap-3">
-                            <div className="relative flex-1">
-                                <input
-                                    type="number"
-                                    className="form-input py-2 pl-4"
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <label style={{ fontSize: '0.875rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Cantidad de sacos por Pallet
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                <input 
+                                    type="number" 
                                     value={sacksPerPallet}
                                     onChange={(e) => setSacksPerPallet(Number(e.target.value))}
+                                    style={{ width: '100%', backgroundColor: '#0f172a', border: 'none', borderRadius: '0.5rem', padding: '1rem 1.5rem', fontSize: '1.5rem', fontWeight: '900', color: '#f8fafc', outline: 'none' }}
                                 />
-                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-sm font-medium">unidades</span>
+                                <div style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                    <button onClick={() => setSacksPerPallet(prev => prev + 1)} style={{ color: '#64748b', cursor: 'pointer', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                                    </button>
+                                    <button onClick={() => setSacksPerPallet(prev => prev > 0 ? prev - 1 : 0)} style={{ color: '#64748b', cursor: 'pointer', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                    </button>
+                                </div>
                             </div>
-                            <button
-                                className="btn btn-primary w-auto"
-                                onClick={updateSettings}
-                                disabled={savingSettings}
-                            >
-                                {savingSettings ? 'Guardando...' : 'Actualizar Configuración'}
-                            </button>
                         </div>
-                    </div>
-
-                    <div className="bg-neutral-50 p-4 rounded-lg border border-neutral-100">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Importante</h4>
-                        <p className="text-xs text-muted leading-relaxed">
-                            Este valor afecta directamente los reportes de stock y las visualizaciones del chofer. Los cambios son instantáneos.
+                        <p style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic', margin: 0 }}>
+                            Este valor se utiliza para calcular automáticamente el pesaje total y la ocupación de carga.
                         </p>
                     </div>
+                    
+                    <button 
+                        onClick={updateSettings}
+                        disabled={savingSettings}
+                        style={{ width: '100%', padding: '1rem 2.5rem', background: 'linear-gradient(to bottom right, #3ecf8e, #006c45)', color: '#ffffff', borderRadius: '0.5rem', fontWeight: '700', fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(62, 207, 142, 0.25)', transition: 'transform 0.1s' }}
+                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                        <Save size={20} />
+                        {savingSettings ? 'Guardando...' : 'Actualizar Configuración'}
+                    </button>
                 </div>
             </div>
         </div>
     );
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-10">
-            {/* Sub-navigation Sidebar (Style Supabase Settings) */}
-            <aside>
-                <nav className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0">
-                    <button
-                        onClick={() => setActiveTab('users')}
-                        className={`nav-item flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${activeTab === 'users' ? 'active bg-brand-bg text-primary font-semibold' : 'text-muted hover:bg-neutral-50'}`}
-                        style={{ justifyContent: 'flex-start' }}
-                    >
-                        <Shield size={16} />
-                        <span>Usuarios</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('drivers')}
-                        className={`nav-item flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${activeTab === 'drivers' ? 'active bg-brand-bg text-primary font-semibold' : 'text-muted hover:bg-neutral-50'}`}
-                        style={{ justifyContent: 'flex-start' }}
-                    >
-                        <Truck size={16} />
-                        <span>Choferes</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('settings')}
-                        className={`nav-item flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${activeTab === 'settings' ? 'active bg-brand-bg text-primary font-semibold' : 'text-muted hover:bg-neutral-50'}`}
-                        style={{ justifyContent: 'flex-start' }}
-                    >
-                        <List size={16} />
-                        <span>Logística</span>
-                    </button>
-                </nav>
-            </aside>
+        <div style={{ padding: '2.5rem', maxWidth: '1152px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+            <div style={{ marginBottom: '1rem' }}>
+                <h2 style={{ fontSize: '2.25rem', fontWeight: '900', color: '#f8fafc', letterSpacing: '-0.05em', marginBottom: '0.5rem' }}>
+                    Panel de Administración
+                </h2>
+                <p style={{ fontSize: '1.125rem', fontWeight: '500', color: '#94a3b8', maxWidth: '42rem' }}>
+                    Administra usuarios, choferes y configuraciones globales del sistema logístico central.
+                </p>
+            </div>
 
-            {/* Main Content Area */}
-            <main className="min-w-0">
-                <div className="mx-auto max-w-5xl animate-in fade-in slide-in-from-right-4 duration-300">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                <button
+                    onClick={() => setActiveTab('users')}
+                    style={activeTab === 'users' ? 
+                        { height: '3.5rem', padding: '0 1.5rem', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: '#3ecf8e', color: '#005233', fontWeight: '600', border: 'none', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(62, 207, 142, 0.2)' } :
+                        { width: '3.5rem', height: '3.5rem', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1e293b', color: '#94a3b8', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }
+                    }
+                >
+                    <Users size={24} />
+                    {activeTab === 'users' && <span>Usuarios</span>}
+                </button>
+                <button
+                    onClick={() => setActiveTab('drivers')}
+                    style={activeTab === 'drivers' ? 
+                        { height: '3.5rem', padding: '0 1.5rem', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: '#3ecf8e', color: '#005233', fontWeight: '600', border: 'none', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(62, 207, 142, 0.2)' } :
+                        { width: '3.5rem', height: '3.5rem', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1e293b', color: '#94a3b8', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }
+                    }
+                >
+                    <Truck size={24} />
+                    {activeTab === 'drivers' && <span>Choferes</span>}
+                </button>
+                <button
+                    onClick={() => setActiveTab('settings')}
+                    style={activeTab === 'settings' ? 
+                        { height: '3.5rem', padding: '0 1.5rem', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: '#3ecf8e', color: '#005233', fontWeight: '600', border: 'none', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(62, 207, 142, 0.2)' } :
+                        { width: '3.5rem', height: '3.5rem', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1e293b', color: '#94a3b8', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }
+                    }
+                >
+                    <Archive size={24} />
+                    {activeTab === 'settings' && <span>Logística</span>}
+                </button>
+            </div>
+
+            <main className="min-w-0 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="mx-auto max-w-5xl">
                     {activeTab === 'users' && renderUsers()}
                     {activeTab === 'drivers' && renderDrivers()}
                     {activeTab === 'settings' && renderSettings()}
@@ -716,7 +739,7 @@ export function AdminPanel() {
             {/* Modal Cambiar Contraseña */}
             {resetUserId && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm animate-in zoom-in-95 duration-200">
+                    <div className="bg-[var(--color-surface)] rounded-xl shadow-xl p-6 w-full max-w-sm animate-in zoom-in-95 duration-200">
                         <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
                             <Key size={18} className="text-primary" />
                             Cambiar Contraseña
@@ -757,7 +780,7 @@ export function AdminPanel() {
             {/* Modal Editar Chofer */}
             {editingDriver && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md animate-in zoom-in-95 duration-200">
+                    <div className="bg-[var(--color-surface)] rounded-xl shadow-xl p-6 w-full max-w-md animate-in zoom-in-95 duration-200">
                         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                             <Truck size={18} className="text-primary" />
                             Editar Chofer
@@ -797,7 +820,7 @@ export function AdminPanel() {
             {/* Modal Editar Perfil */}
             {editingProfile && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md animate-in zoom-in-95 duration-200">
+                    <div className="bg-[var(--color-surface)] rounded-xl shadow-xl p-6 w-full max-w-md animate-in zoom-in-95 duration-200">
                         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                             <Shield size={18} className="text-primary" />
                             Editar Perfil de Usuario
